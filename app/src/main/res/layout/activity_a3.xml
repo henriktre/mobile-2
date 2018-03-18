@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.henriktre.lab2.A1Activity">
+    tools:context="com.example.henriktre.lab2.A3Activity">
 
-    <ListView
-        android:id="@+id/listView"
+    <WebView
+        android:id="@+id/webView"
         android:layout_width="368dp"
         android:layout_height="495dp"
         tools:layout_editor_absoluteX="8dp"

@@ -1,89 +1,110 @@
 package com.example.henriktre.lab2;
 
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.widget.EditText;
-import android.widget.NumberPicker;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.XML;
+
+import java.util.ArrayList;
 
 public class A1Activity extends AppCompatActivity {
+    RequestQueue queue      = null;
+    int       itemLimit     = 0;
+    int       frequency     = 0;
+    String    rssUrl;
+    JSONObject rss;
+    JSONArray itemArray = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a1);
-        setupNumberPicker();
-        createSharedPreferences();
-        getUserPreference();
+
+        if (queue == null) {
+            queue = Volley.newRequestQueue(this);
+        }
+
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            rssUrl = bundle.getString("rssText");
+            itemLimit = bundle.getInt("itemLimit");
+            frequency = bundle.getInt("frequency");
+        }
+        getRssData(rssUrl);
     }
-    private void setupNumberPicker() {
-        // Get dropdowns from ids
-        NumberPicker limit = findViewById(R.id.feedNumberPicker);
-        NumberPicker frequency = findViewById(R.id.refreshRatePicker);
+    public void getRssData(String url) {
 
-        // Set max and min values to limit items
-        limit.setMinValue(1);
-        limit.setMaxValue(20);
-        limit.setWrapSelectorWheel(false);
+        StringRequest req = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                stringToJson(response);
+                updateView();
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
 
-        // Set max and min values to frequency
-        frequency.setMinValue(1);
-        frequency.setMaxValue(10);
-        frequency.setWrapSelectorWheel(false);
+            }
+        });
+        queue.add(req);
     }
-    private void createSharedPreferences() {
-        // Get shared prefs
-        SharedPreferences sharedPref = getSharedPreferences("FileName",0);
+    private void stringToJson(String xml) {
+        try {
+            rss = XML.toJSONObject(xml);
+        } catch (JSONException e) {
+            Log.e("JSON Exception", e.getMessage());
+        }
 
-        // Find values from ID
-        NumberPicker limitItems = findViewById(R.id.feedNumberPicker);
-        NumberPicker frequency = findViewById(R.id.refreshRatePicker);
-        EditText rssUrl = findViewById(R.id.rssText);
-
-        // Save values to shared preferences
-        SharedPreferences.Editor prefEditor = sharedPref.edit();
-        prefEditor.putInt("limitItems", limitItems.getValue());
-        prefEditor.putInt("frequency", frequency.getValue());
-        prefEditor.putString("URL", rssUrl.getText().toString());
-
-        prefEditor.apply();
     }
+    private void updateView() {
+        ArrayList<String> data = new ArrayList<>();
+        ListView listview = findViewById(R.id.listView);
+        try {
+            itemArray = rss.getJSONObject("rss").getJSONObject("channel").getJSONArray("item");
+            for(int i = 0; i < itemLimit; i++) {
+                String title = itemArray.getJSONObject(i).getString("title");
+                data.add(title);
+            }
 
-    /**
-     * getUserPreference gets prefs and sets the values to elements in the app
-     * **/
-    private void getUserPreference() {
-        // Get shared prefs
-        SharedPreferences sharedPref = getSharedPreferences("FileName",MODE_PRIVATE);
-        // Get values from shared prefs
-        int limit= sharedPref.getInt("limitItems",-1);
-        int freq = sharedPref.getInt("frequency", -1);
-        String url = sharedPref.getString("URL", "");
 
-        // Set get elements by id
-        NumberPicker limitItems = findViewById(R.id.feedNumberPicker);
-        NumberPicker frequency = findViewById(R.id.refreshRatePicker);
-        EditText rssUrl = findViewById(R.id.rssText);
+        } catch (JSONException e) {
+            Log.e("json error", e.getMessage());
+        }
 
-        // Set values to elements in the app
-        limitItems.setValue(limit);
-        frequency.setValue(freq);
-        rssUrl.setText(url);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(A1Activity.this, android.R.layout.simple_list_item_1, data);
+        listview.setAdapter(adapter);
+        addListenerOnListView();
     }
-/*
-    private void back() {
+    private void addListenerOnListView() {
+        ListView listView = findViewById(R.id.listView);
 
-
-        Button button = findViewById(R.id.backButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                EditText t1 = findViewById(R.id.T1);
-                Intent intent = new Intent(A1Activity.this, A2Activity.class);
-                intent.putExtra("T1", t1.getText().toString());
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent intent = new Intent(A1Activity.this, A3Activity.class);
+                try {
+                    intent.putExtra("url", itemArray.getJSONObject(i).getString("link"));
+                } catch(JSONException e) {
+                    Log.d("json error", e.getMessage());
+                }
                 startActivity(intent);
             }
         });
     }
-*/
-
 }
