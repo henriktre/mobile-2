@@ -2,6 +2,7 @@ package com.example.henriktre.lab2;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -22,6 +23,8 @@ import org.json.JSONObject;
 import org.json.XML;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class A1Activity extends AppCompatActivity {
     RequestQueue queue      = null;
@@ -47,6 +50,18 @@ public class A1Activity extends AppCompatActivity {
             frequency = bundle.getInt("frequency");
         }
         getRssData(rssUrl);
+
+        Timer repeat = new Timer ();
+        TimerTask Task = new TimerTask() {
+            @Override
+            public void run () {
+                Looper.prepare();
+                getRssData(rssUrl);
+                Looper.loop();
+            }
+        };
+
+        repeat.schedule (Task, 0l, 1000*60*frequency);
     }
     public void getRssData(String url) {
 
